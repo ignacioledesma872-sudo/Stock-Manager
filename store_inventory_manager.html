@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #f0ede8;
+    --muted: #666;
+    --accent: #f5c842;
+    --accent2: #e8855a;
+    --green: #5ab87c;
+    --red: #e85a5a;
+    --blue: #5a9be8;
+    --purple: #a07de8;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+
+  .header-stats {
+    display: flex;
+    gap: 28px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .stat-val {
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 500;
+    display: block;
+  }
+
+  .btn-add {
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    padding: 10px 22px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .btn-add:hover { background: #ffe066; transform: translateY(-1px); }
+
+  /* FILTERS */
+  .toolbar {
+    padding: 16px 40px;
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 14px 8px 36px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1rem;
+    pointer-events: none;
+  }
+
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  /* GRID */
+  .grid {
+    padding: 28px 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+  }
+
+  /* PRODUCT CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+  .card.marked-yellow { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent); }
+  .card.marked-green  { border-color: var(--green) !important; box-shadow: 0 0 0 1px var(--green); }
+  .card.marked-red    { border-color: var(--red) !important; box-shadow: 0 0 0 1px var(--red); }
+  .card.marked-blue   { border-color: var(--blue) !important; box-shadow: 0 0 0 1px var(--blue); }
+  .card.marked-purple { border-color: var(--purple) !important; box-shadow: 0 0 0 1px var(--purple); }
+
+  .card-img {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    display: block;
+    background: var(--surface2);
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 1.2rem;
+    line-height: 1;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+
+  .card-actions-top {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card:hover .card-actions-top { opacity: 1; }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: rgba(15,15,15,0.85);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .icon-btn:hover { background: var(--surface2); }
+  .icon-btn.del:hover { background: var(--red); border-color: var(--red); }
+
+  .card-body { padding: 14px 16px 16px; }
+
+  .card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+  }
+  .card-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .card-stock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .stock-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .stock-bar {
+    height: 100%;
+    transition: width 0.4s;
+  }
+  .stock-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .stock-ok   { background: var(--green); }
+  .stock-warn { background: var(--accent); }
+  .stock-low  { background: var(--red); }
+
+  /* BOTÓN DE COMPRA */
+  .btn-purchase {
+    margin-left: 8px !important;
+    background: var(--green) !important;
+    color: #0f0f0f !important;
+    border: none !important;
+    padding: 5px 10px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    letter-spacing: 0.5px !important;
+  }
+  .btn-purchase:hover {
+    background: #6cd892 !important;
+    transform: scale(1.05) !important;
+  }
+  .btn-purchase:active {
+    transform: scale(0.95) !important;
+  }
+
+  /* MARK PALETTE */
+  .mark-palette {
+    display: flex;
+    gap: 5px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .mark-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .mark-dot:hover { transform: scale(1.25); }
+  .mark-dot.active { border-color: white; }
+  .md-yellow { background: var(--accent); }
+  .md-green  { background: var(--green); }
+  .md-red    { background: var(--red); }
+  .md-blue   { background: var(--blue); }
+  .md-purple { background: var(--purple); }
+
+  .mark-emoji-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 2px 7px;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+  .mark-emoji-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* ADD/EDIT MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+  }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    position: relative;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 3px;
+    margin-bottom: 22px;
+    color: var(--accent);
+  }
+  .field {
+    margin-bottom: 16px;
+  }
+  .field label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 9px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); }
+  .field-row { display: flex; gap: 14px; }
+  .field-row .field { flex: 1; }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+    justify-content: flex-end;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 9px 20px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+  .btn-save {
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    padding: 9px 24px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  }
+  .btn-save:hover { background: #ffe066; }
+
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* EMOJI PICKER */
+  .emoji-picker {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-top: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 10px;
+    position: absolute;
+    bottom: 40px;
+    right: 0;
+    z-index: 10;
+    width: 220px;
+  }
+  .emoji-opt {
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-align: center;
+    padding: 3px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .emoji-opt:hover { background: var(--border2); }
+
+  /* EMPTY */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  /* NOTAS - BOTÓN FLOTANTE */
+  .notes-fab {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(245, 200, 66, 0.3);
+  }
+  .notes-fab:hover {
+    background: #ffe066;
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(245, 200, 66, 0.5);
+  }
+
+  /* PANEL DE NOTAS */
+  .notes-panel {
+    position: fixed;
+    bottom: 100px;
+    left: 30px;
+    width: 380px;
+    max-height: 600px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    opacity: 0.2;
+    transition: opacity 0.3s ease;
+  }
+  .notes-panel:hover {
+    opacity: 1;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .notes-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .notes-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .notes-close-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .notes-close-btn:hover { color: var(--text); }
+
+  .notes-search-wrap {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .notes-search-wrap input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .notes-search-wrap input:focus { border-color: var(--accent); }
+
+  .notes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+  .notes-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  .notes-list::-webkit-scrollbar-track {
+    background: var(--surface2);
+  }
+  .notes-list::-webkit-scrollbar-thumb {
+    background: var(--border2);
+    border-radius: 3px;
+  }
+
+  .note-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .note-item:hover { border-color: var(--border2); background: #252525; }
+  .note-item.marked-yellow { border-color: var(--accent) !important; }
+  .note-item.marked-green  { border-color: var(--green) !important; }
+  .note-item.marked-red    { border-color: var(--red) !important; }
+  .note-item.marked-blue   { border-color: var(--blue) !important; }
+  .note-item.marked-purple { border-color: var(--purple) !important; }
+
+  .note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .note-emoji {
+    font-size: 1.2rem;
+  }
+  .note-text {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-break: break-word;
+    color: var(--text);
+  }
+  .note-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.15s;
+    padding: 0;
+  }
+  .note-delete:hover { color: var(--red); }
+
+  .notes-footer {
+    padding: 12px;
+    border-top: 1px solid var(--border2);
+  }
+  .notes-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .notes-btn:hover { background: #ffe066; }
+
+  /* MODAL DE NOTAS */
+  .notes-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 250;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+  }
+  .notes-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    position: relative;
+  }
+  .notes-modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .notes-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .notes-modal-close:hover { color: var(--text); }
+
+  .note-field {
+    margin-bottom: 16px;
+  }
+  .note-field label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .note-field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+    min-height: 100px;
+  }
+  .note-field textarea:focus { border-color: var(--accent); }
+
+  .note-mark-palette {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .note-mark-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .note-mark-dot:hover { transform: scale(1.2); }
+  .note-mark-dot.active { border-color: white; }
+
+  .note-emoji-picker {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 10px;
+  }
+  .note-emoji-opt {
+    font-size: 1.3rem;
+    cursor: pointer;
+    text-align: center;
+    padding: 4px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .note-emoji-opt:hover { background: var(--border2); }
+
+  .notes-modal-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .notes-btn-cancel {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 9px 20px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+  .notes-btn-cancel:hover { border-color: var(--text); color: var(--text); }
+  .notes-btn-save {
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    padding: 9px 24px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .notes-btn-save:hover { background: #ffe066; }
+
+  /* Responsive */
+  @media(max-width: 600px) {
+    header, .toolbar, .grid { padding-left: 16px; padding-right: 16px; }
+    .header-stats { gap: 16px; font-size: 0.68rem; }
+    .logo { font-size: 1.5rem; }
+    .notes-panel { width: calc(100vw - 60px); bottom: 90px; left: 30px; max-height: 400px; }
+    .notes-fab { bottom: 20px; left: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- BOTÓN FLOTANTE NOTAS -->
+<button class="notes-fab" onclick="toggleNotesPanel()">📝</button>
+
+<!-- PANEL DE NOTAS -->
+<div class="notes-panel" id="notesPanel" style="display:none">
+  <div class="notes-header">
+    <div class="notes-title">NOTAS</div>
+    <button class="notes-close-btn" onclick="closeNotesPanel()">✕</button>
+  </div>
+  <div class="notes-search-wrap">
+    <input type="text" id="notes-search" placeholder="Buscar notas..." oninput="renderNotes()">
+  </div>
+  <div class="notes-list" id="notesList"></div>
+  <div class="notes-footer">
+    <button class="notes-btn" onclick="openNoteModal()">+ NUEVA NOTA</button>
+  </div>
+</div>
+
+<!-- MODAL DE NOTAS -->
+<div class="notes-modal-overlay" id="notesModalOverlay" style="display:none">
+  <div class="notes-modal">
+    <button class="notes-modal-close" onclick="closeNoteModal()">✕</button>
+    <div class="notes-modal-title" id="notesModalTitle">NUEVA NOTA</div>
+    <div class="note-field">
+      <label>Contenido</label>
+      <textarea id="note-content" placeholder="Escribe tu nota aquí..."></textarea>
+    </div>
+    <div class="note-field">
+      <label>Emoji</label>
+      <div class="note-emoji-picker">
+        <div class="note-emoji-opt" onclick="setNoteEmoji(null)" title="Sin emoji">—</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('📌')">📌</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('⭐')">⭐</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('💡')">💡</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('✅')">✅</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('❌')">❌</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('🔥')">🔥</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('📝')">📝</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('⚠️')">⚠️</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('🎯')">🎯</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('💬')">💬</div>
+        <div class="note-emoji-opt" onclick="setNoteEmoji('🔔')">🔔</div>
+      </div>
+    </div>
+    <div class="note-field">
+      <label>Color</label>
+      <div class="note-mark-palette">
+        <div class="note-mark-dot md-yellow" title="Amarillo" onclick="setNoteMark('yellow')"></div>
+        <div class="note-mark-dot md-green" title="Verde" onclick="setNoteMark('green')"></div>
+        <div class="note-mark-dot md-red" title="Rojo" onclick="setNoteMark('red')"></div>
+        <div class="note-mark-dot md-blue" title="Azul" onclick="setNoteMark('blue')"></div>
+        <div class="note-mark-dot md-purple" title="Púrpura" onclick="setNoteMark('purple')"></div>
+      </div>
+    </div>
+    <div class="notes-modal-btns">
+      <button class="notes-btn-cancel" onclick="closeNoteModal()">Cancelar</button>
+      <button class="notes-btn-save" onclick="saveNote()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">STOCK<span>MGR</span></div>
+  <div class="header-stats">
+    <div><span class="stat-val" id="stat-total">5</span>productos</div>
+    <div><span class="stat-val" id="stat-units">0</span>unidades</div>
+    <div><span class="stat-val" id="stat-value">$0</span>valor total</div>
+  </div>
+  <button class="btn-add" onclick="openModal()">+ AÑADIR PRODUCTO</button>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search" placeholder="Buscar producto..." oninput="renderProducts()">
+  </div>
+  <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">TODOS</button>
+  <button class="filter-btn" data-filter="low" onclick="setFilter(this,'low')">⚠️ STOCK BAJO</button>
+  <button class="filter-btn" data-filter="marked" onclick="setFilter(this,'marked')">🎨 MARCADOS</button>
+  <div style="border-left:1px solid var(--border);margin:0 10px;height:24px;"></div>
+  <select id="category-filter" onchange="setCategory(this.value)" style="background:var(--surface);border:1px solid var(--border2);color:var(--muted);padding:8px 12px;font-size:0.78rem;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;"></select>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">NUEVO PRODUCTO</div>
+    <div class="field">
+      <label>Nombre del producto</label>
+      <input type="text" id="f-name" placeholder="Ej: Auriculares Sony WH-1000XM5">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Precio ($)</label>
+        <input type="text" id="f-price" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Unidades en stock</label>
+        <input type="number" id="f-units" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Categoría</label>
+      <select id="f-category" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;cursor:pointer;transition:border-color 0.2s;"></select>
+    </div>
+    <div class="field">
+      <label>URL de imagen</label>
+      <input type="text" id="f-img" placeholder="https://... (dejar vacío para imagen por defecto)">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveProduct()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMOJIS = ['⭐','🔥','📦','🏷️','✅','❌','⚠️','🎯','💯','🚀','❄️','🌟','🛒','📌','🏆','⚡'];
+const MARKS = ['yellow','green','red','blue','purple'];
+const MARK_LABELS = { yellow:'⭐ Destacado', green:'✅ OK', red:'❌ Bajo', blue:'🔵 Info', purple:'🔮 Especial' };
+const CATEGORIES = ['Tecnología', 'Ropa', 'Hogar', 'Deportes', 'Alimentos', 'Libros', 'Electrónica', 'Otros'];
+const CATEGORY_COLORS = {
+  'Tecnología': '#5a9be8',
+  'Ropa': '#a07de8',
+  'Hogar': '#5ab87c',
+  'Deportes': '#e8855a',
+  'Alimentos': '#f5c842',
+  'Libros': '#e85a5a',
+  'Electrónica': '#5a9be8',
+  'Otros': '#666'
+};
+
+const PLACEHOLDER_IMGS = [
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAMAAABC4vDmAAAAA1BMVEUATwDQm24QAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAHgZViQAAd2fpbUAAAAASUVORK5CYII=',
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANAAAACUCAMAAADVs1c8AAAAA1BMVEVsDxkFRLuRAAAANElEQVR4nO3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwZ41AABFngSrQAAAABJRU5ErkJggg==',
+  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQAlAMBIgACEQEDEQH/xAAYAAADAQEAAAAAAAAAAAAAAAAAAgMBBv/EABkQAQEBAQEBAAAAAAAAAAAAAAABEQISIf/EABkBAQEBAQEBAAAAAAAAAAAAAAECAAMHBv/EABgRAQEBAQEAAAAAAAAAAAAAAAABEQIS/9oADAMBAAIRAxEAPwDtAA8vfTBsghmFZG42RsgTrMGHxvlhpMGHxuDRqWDFPLMJ1OxmKWMsY6RhrGUkoaxlAAMwbghmGiRuCQ8gTaJDSCQ8gRaWRsh5G+RqdJ5HlTB5A1PGWK+S4dOpWMxWwth0yo2MsU6hbCuVOsNYywrKGsYmkNIyGkCKaQ0gkPIKi0SHkEh5EOdrJDYaQ2DUaTB5U8jG0aneS3lWxljaZ0jYWxWwthVKjYSrWJ9KjpKlS2KWEqnSEDQSaHkJFOQmminMJFOU1zppFJC8qSIrlWyGkEPIlztLI3DSNxtGp2FsVwtjNqVidivUJVR05qXUT6V6T6VHWVKwlitTq3SEADLbFOScqciop+VInypEudU5U5T5Uia5U8h5Cw8TXKmkbggCS0lPSVlQnSfSlT6VF8p1PpSp9KjtE+idH6JVR0hMACliKcpw8YVXlTlKH5qa52LcniXNUlRXKxXmnlSlPKlysUlGk0aBhqWi0lpaRlT6NaS1UdOS9J9G6pOlR1hKn0e0lU6wgAKhDypw8ZqpypEuaeUVzsVlPKlKeVDnYrKadJSm0Yi8q6NT0ehifJ9Lb9Lay04fLbSdUWktK5GWk6rbSWqjpIW0lNaWqdIUBjKENCtlLVSU8qUppQnFZTSpSmlTiLFpW6lK3RiLFdGp6NGNilpdLrLTjY20trLS2nFY20lotLacXIylrbSlcDACQ1gYmNpGysDymlT1soTikptSlbrJxTR6Jo1ODD6y0mjScbay0ujScFrNYxlYKwAqAAZgAGYNYGZrYAyWgAM2ABgwAMzAwMQwAkABiAAzP//Z',
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQEAAACUCAMAAACk7myLAAAAS1BMVEUHBm4KBVkMBUgNBD0HBmQOBDkHB2sNBEcNAz8JBVIKBVUKBFoLBU8NBEMLBU0KBFwOBEELBUsHBWYHBmwIBWAMBUkHBmMJBVEKBF5yZ1s5AAACEUlEQVR4nO3b23KCQBBFUTWIwSRiwGj+/0ujhJtACTXiFNNn95N5dGX3DFrlatWdvJi4Pdc/s3KiZs7F3F6c/ue3NWk5H/Wsu7MvJ6nncp3Peg7VfNez2fwUs2nNrpqvao7lvDfzdj/b1vQARgQyeQEaoAEaQEBTIEdAXSBHIJe/DWlg0QI7toAtoAH5c4AtoAEaQAABBDgJ+Y6IZ0K2gC1gC9gC788DNEADCCCAgKSAt5PwslQBX7fhZbECvhpAYLkCo1sQWRcYbeAkJTDUgHmB0ecB8wJsAQ0gwBYg8EggilwF9nsEEAhUIJMXoIHFNbBTauD2xqUFiveNgJLAYZqA4bsAAQQQQGCigPe7wN8z4VIFXBtYdyc0gfzZBoIXoAEEnj4J7QjQAALzCyQ2BVLxBtIUAcMCk25D0wI0QAM0MCBwkhB49OlYQ4AGEPAlkCQIIIAAAgEJdH9foSZw7v3CREUgkxegARqgAQTYAhpAAAEEEECA25AGaEC2gZW4QLMDslvQA1AToAEaiOUFaMBOA1utBloGrX++lMBAA44Cgd6GMwqE3sDdIah0Eg4KPH0SBrAF/YPQQSCOA27gFQJhnQMvFgh8CybfBWa3wFXAzhbQAA3QAA3QAA3MIMATEQ2ICoT1HRENPPxsKN9Ak4JsAwg4Cti5DWmABmhghga4DQ00sL0fwXPARcDOp+MBgT8VXeS+QHwPlgAAAABJRU5ErkJggg=='
+];
+
+let products = [];
+let nextId = 6;
+let editingId = null;
+let currentFilter = 'all';
+let currentCategory = '';
+let openEmojiFor = null;
+
+// ========== PERSISTENCIA ==========
+function saveToLocalStorage() {
+  localStorage.setItem('stockmgr_products', JSON.stringify(products));
+  localStorage.setItem('stockmgr_nextId', JSON.stringify(nextId));
+  localStorage.setItem('stockmgr_notes', JSON.stringify(notes));
+  localStorage.setItem('stockmgr_nextNoteId', JSON.stringify(nextNoteId));
+}
+
+function loadFromLocalStorage() {
+  const savedProducts = localStorage.getItem('stockmgr_products');
+  const savedNextId = localStorage.getItem('stockmgr_nextId');
+  const savedNotes = localStorage.getItem('stockmgr_notes');
+  const savedNextNoteId = localStorage.getItem('stockmgr_nextNoteId');
+  
+  if (savedProducts) products = JSON.parse(savedProducts);
+  if (savedNextId) nextId = JSON.parse(savedNextId);
+  if (savedNotes) notes = JSON.parse(savedNotes);
+  if (savedNextNoteId) nextNoteId = JSON.parse(savedNextNoteId);
+}
+
+function setFilter(btn, f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts();
+}
+
+function setCategory(cat) {
+  currentCategory = cat;
+  renderProducts();
+}
+
+function updateStats() {
+  const total = products.length;
+  const units = products.reduce((s,p) => s + (+p.units||0), 0);
+  const value = products.reduce((s,p) => s + (isNaN(parseFloat(p.price))?0:parseFloat(p.price))*(+p.units||0), 0);
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-units').textContent = units;
+  document.getElementById('stat-value').textContent = '$' + value.toFixed(2);
+}
+
+function stockClass(units) {
+  if (units <= 0) return 'stock-low';
+  if (units <= 5) return 'stock-warn';
+  return 'stock-ok';
+}
+
+function stockPct(units) {
+  if (units <= 0) return 0;
+  if (units >= 50) return 100;
+  return Math.round((units / 50) * 100);
+}
+
+function renderProducts() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let list = products.filter(p => p.name.toLowerCase().includes(q));
+  if (currentFilter === 'low') list = list.filter(p => +p.units <= 5);
+  if (currentFilter === 'marked') list = list.filter(p => p.mark);
+  if (currentCategory) list = list.filter(p => p.category === currentCategory);
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty">Nada que ver aquí :)</div>';
+    updateStats();
+    return;
+  }
+
+  list.forEach(p => {
+    const sc = stockClass(+p.units);
+    const pct = stockPct(+p.units);
+    const catColor = CATEGORY_COLORS[p.category] || '#666';
+    const card = document.createElement('div');
+    card.className = 'card' + (p.mark ? ' marked-' + p.mark : '');
+    card.innerHTML = `
+      <img class="card-img" src="${p.img || PLACEHOLDER_IMGS[0]}" alt="${p.name}" onerror="this.src='${PLACEHOLDER_IMGS[0]}'">
+      ${p.emoji ? `<div class="card-badge">${p.emoji}</div>` : ''}
+      <div class="card-actions-top">
+        <button class="icon-btn" title="Editar" onclick="openModal(${p.id})">✏️</button>
+        <button class="icon-btn del" title="Eliminar" onclick="deleteProduct(${p.id})">🗑️</button>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">
+          <div style="color:${catColor};font-weight:600;">● ${p.category || 'Sin categoría'}</div>
+        </div>
+        <div class="card-header-row">
+          <div class="card-name">${p.name}</div>
+          <div class="card-price">${p.price}</div>
+        </div>
+        <div class="card-stock">
+          <div class="stock-bar-wrap"><div class="stock-bar ${sc}" style="width:${pct}%"></div></div>
+          <span class="stock-label">${+p.units === 0 ? 'SIN STOCK' : +p.units + ' uds.'}</span>
+          <button class="btn-purchase" onclick="sellProduct(${p.id})" title="Registrar una compra">🛒 COMPRA</button>
+        </div>
+        <div class="mark-palette">
+          ${MARKS.map(m => `<div class="mark-dot md-${m}${p.mark===m?' active':''}" title="${MARK_LABELS[m]}" onclick="toggleMark(${p.id},'${m}')"></div>`).join('')}
+          <div style="position:relative;margin-left:auto">
+            <button class="mark-emoji-btn" onclick="toggleEmojiPicker(event,${p.id})">${p.emoji || '🏷️'} ▾</button>
+            <div class="emoji-picker" id="ep-${p.id}" style="display:none">
+              <div class="emoji-opt" onclick="setEmoji(${p.id},null)" title="Sin emoji">—</div>
+              ${EMOJIS.map(e => `<div class="emoji-opt" onclick="setEmoji(${p.id},'${e}')">${e}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  updateStats();
+}
+
+function toggleMark(id, mark) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.mark = p.mark === mark ? null : mark;
+  saveToLocalStorage();
+  renderProducts();
+}
+
+function toggleEmojiPicker(e, id) {
+  e.stopPropagation();
+  const ep = document.getElementById('ep-' + id);
+  const isOpen = ep.style.display !== 'none';
+  // close all
+  document.querySelectorAll('.emoji-picker').forEach(el => el.style.display = 'none');
+  if (!isOpen) { ep.style.display = 'grid'; openEmojiFor = id; }
+  else openEmojiFor = null;
+}
+
+function setEmoji(id, emoji) {
+  const p = products.find(x => x.id === id);
+  if (p) p.emoji = emoji;
+  saveToLocalStorage();
+  renderProducts();
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.emoji-picker').forEach(el => el.style.display = 'none');
+});
+
+function isPlaceholderImg(img) {
+  if (!img) return false;
+  return PLACEHOLDER_IMGS.includes(img) || img.startsWith('data:');
+}
+
+function openModal(id = null) {
+  editingId = id;
+  const p = id ? products.find(x => x.id === id) : null;
+  document.getElementById('modal-title').textContent = id ? 'EDITAR PRODUCTO' : 'NUEVO PRODUCTO';
+  document.getElementById('f-name').value  = p ? p.name  : '';
+  document.getElementById('f-price').value = p ? p.price : '';
+  document.getElementById('f-units').value = p ? p.units : '';
+  document.getElementById('f-category').value = p ? (p.category || 'Tecnología') : 'Tecnología';
+  document.getElementById('f-img').value   = p && p.img && !isPlaceholderImg(p.img) ? p.img : '';
+  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('f-name').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  editingId = null;
+}
+
+function saveProduct() {
+  const name  = document.getElementById('f-name').value.trim();
+  const price = document.getElementById('f-price').value.trim() || '0.00';
+  const units = parseInt(document.getElementById('f-units').value) || 0;
+  const category = document.getElementById('f-category').value || 'Tecnología';
+  const imgRaw = document.getElementById('f-img').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  if (editingId) {
+    const p = products.find(x => x.id === editingId);
+    if (p) {
+      p.name = name; p.price = price; p.units = units; p.category = category;
+      if (imgRaw) p.img = imgRaw;
+    }
+  } else {
+    const randImg = PLACEHOLDER_IMGS[Math.floor(Math.random() * PLACEHOLDER_IMGS.length)];
+    products.push({ id: nextId++, name, price, units, category, img: imgRaw || randImg, mark: null, emoji: '📦' });
+  }
+  saveToLocalStorage();
+  closeModal();
+  renderProducts();
+}
+
+function deleteProduct(id) {
+  if (!confirm('¿Eliminar este producto?')) return;
+  products = products.filter(p => p.id !== id);
+  saveToLocalStorage();
+  renderProducts();
+}
+
+function sellProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  if (+p.units > 0) {
+    p.units = +p.units - 1;
+    saveToLocalStorage();
+    renderProducts();
+  }
+}
+
+// Enter to save
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && document.getElementById('modal').style.display === 'flex') saveProduct();
+});
+
+// ========== SISTEMA DE NOTAS ==========
+let notes = [];
+let nextNoteId = 1;
+let editingNoteId = null;
+let currentNoteEmoji = null;
+let currentNoteMark = null;
+
+function toggleNotesPanel() {
+  const panel = document.getElementById('notesPanel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'flex';
+    renderNotes();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function closeNotesPanel() {
+  document.getElementById('notesPanel').style.display = 'none';
+}
+
+function renderNotes() {
+  const q = document.getElementById('notes-search').value.toLowerCase();
+  let list = notes.filter(n => n.content.toLowerCase().includes(q));
+  const notesList = document.getElementById('notesList');
+  notesList.innerHTML = '';
+
+  if (list.length === 0) {
+    notesList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-family:\'DM Mono\', monospace;font-size:0.85rem;">// Sin notas</div>';
+    return;
+  }
+
+  list.forEach(note => {
+    const item = document.createElement('div');
+    item.className = 'note-item' + (note.mark ? ' marked-' + note.mark : '');
+    const preview = note.content.substring(0, 60) + (note.content.length > 60 ? '...' : '');
+    item.innerHTML = `
+      <div class="note-header">
+        ${note.emoji ? `<div class="note-emoji">${note.emoji}</div>` : ''}
+        <div class="note-text">${preview}</div>
+        <button class="note-delete" onclick="deleteNote(${note.id})">🗑️</button>
+      </div>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.note-delete')) return;
+      openNoteModal(note.id);
+    });
+    notesList.appendChild(item);
+  });
+}
+
+function openNoteModal(id = null) {
+  editingNoteId = id;
+  currentNoteEmoji = null;
+  currentNoteMark = null;
+  const note = id ? notes.find(n => n.id === id) : null;
+  
+  document.getElementById('notesModalTitle').textContent = id ? 'EDITAR NOTA' : 'NUEVA NOTA';
+  document.getElementById('note-content').value = note ? note.content : '';
+  
+  if (note) {
+    currentNoteEmoji = note.emoji || null;
+    currentNoteMark = note.mark || null;
+  }
+  
+  updateNoteMarkButtons();
+  document.getElementById('notesModalOverlay').style.display = 'flex';
+  document.getElementById('note-content').focus();
+}
+
+function closeNoteModal() {
+  document.getElementById('notesModalOverlay').style.display = 'none';
+  editingNoteId = null;
+  currentNoteEmoji = null;
+  currentNoteMark = null;
+}
+
+function setNoteEmoji(emoji) {
+  currentNoteEmoji = emoji;
+}
+
+function setNoteMark(mark) {
+  currentNoteMark = currentNoteMark === mark ? null : mark;
+  updateNoteMarkButtons();
+}
+
+function updateNoteMarkButtons() {
+  document.querySelectorAll('.note-mark-dot').forEach(dot => {
+    dot.classList.remove('active');
+  });
+  if (currentNoteMark) {
+    const marks = ['yellow', 'green', 'red', 'blue', 'purple'];
+    const idx = marks.indexOf(currentNoteMark);
+    if (idx >= 0) {
+      document.querySelectorAll('.note-mark-dot')[idx].classList.add('active');
+    }
+  }
+}
+
+function saveNote() {
+  const content = document.getElementById('note-content').value.trim();
+  if (!content) {
+    document.getElementById('note-content').focus();
+    return;
+  }
+
+  if (editingNoteId) {
+    const note = notes.find(n => n.id === editingNoteId);
+    if (note) {
+      note.content = content;
+      note.emoji = currentNoteEmoji;
+      note.mark = currentNoteMark;
+    }
+  } else {
+    notes.push({
+      id: nextNoteId++,
+      content: content,
+      emoji: currentNoteEmoji,
+      mark: currentNoteMark,
+      created: new Date().toLocaleString()
+    });
+  }
+
+  saveToLocalStorage();
+  closeNoteModal();
+  renderNotes();
+}
+
+function deleteNote(id) {
+  if (!confirm('¿Eliminar esta nota?')) return;
+  notes = notes.filter(n => n.id !== id);
+  saveToLocalStorage();
+  renderNotes();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('notesModalOverlay').style.display === 'flex') closeNoteModal();
+});
+
+// Inicializar selects de categorías
+function initCategorySelects() {
+  const categorySelect = document.getElementById('f-category');
+  const filterSelect = document.getElementById('category-filter');
+  
+  categorySelect.innerHTML = CATEGORIES.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  filterSelect.innerHTML = '<option value="">📂 Todas las categorías</option>' + CATEGORIES.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+}
+
+loadFromLocalStorage();
+initCategorySelects();
+renderProducts();
+</script>
+</body>
+</html>
